@@ -22,7 +22,7 @@ Prenez soin de d'inclure l'exécutable `subsync` dans votre $PATH.
 
 ## Fonctionnement
 
-Le script ne fait pas grand chose de magique, il fait appel à zenity pour avoir une interaction avec l'utilisateur.
+Le script ne fait pas grand chose de magique, il fait appel à zenity pour avoir une interaction avec l'utilisateur (choisir le fichier vidéo & sous-titres) puis il fait tourner `subsync` sur les valeurs retournées.
 
 1. Choisir le fichier vidéo.
 2. Le script tente de trouver le fichier de sous-titre automatiquement en se basant sur le nom du fichier vidéo.
@@ -35,6 +35,37 @@ Le script ne fait pas grand chose de magique, il fait appel à zenity pour avoir
     1. L'autosync se lance et le fichier de sous-titre synchronisé est placé dans le même répertoire que la vidéo avec le même nom (à l'extension près). Afin de faciliter l'intégration dans VLC
     2. Il propose de lancer la vidéo dans VLC
     3. Sinon d'ouvrir le répertoire contenant la vidéo et les sous-titres
+
+## Intégration à VLC (si on veut)
+
+### Préambule VLsub
+
+On sait que VLC pour trouver la piste de sous-titres à lire avec le fichier vidéo se base sur les noms de fichiers, par exemple :
+```
+myvideo.mkv
+myvideo.srt
+```
+Dans ce cas, si on lance `myvideo.mkv` alors VLC lancera automatiquement la vidéo avec le sous-titre `myvideo.srt`.
+
+Il est un plugin installé par défaut méconnue de VLC qui s'appelle **VLsub**. Il se trouve dans l'onglet `Vue -> VLsub`. Ce plugin permet de télécharger automatiquement des sous-titres dans de nombreuses langues pour le film ou l'épisode de la série que vous regardez en se basant sur des sites tels qu'opensubtitles.org ou addic7ed.com.
+
+Il fonctionne sur 2 modes, l'un qui calcul le hash de la vidéo et permet d'obtenir des sous-titres généralement parfaitement synchronisé avec votre fichier. Mais ce n'est pas très souvent qu'on en trouve en français. Et si on veut commencer à regarder notre film alors que le téléchargement de celui-ci n'est pas terminé cela ne fonctionne pas non plus.
+
+Le second mode se base sur le nom du film ou le nom de la série avec les numéros de saison et d'épisode. Souvent plus riche en résultats, on trouve son bonheur avec ce mode là. Seulement, très souvent les sous-titres ne sont pas synchonisés.
+
+Alors on peut ajuster à la mano avec les touches `G` et `H` du clavier pour synchroniser mais c'est pénible.
+
+D'où l'intérêt du projet `subsync` de Stephen Macke. On notera qu'il est probablement possible d'utiliser son script avec des outils comme Plex ou Kodi.
+
+### Mon Workflow
+
+Il faut noter que **VLsub** télécharge les sous-titres en les plaçants à côté de la vidéo avec le nom de fichier `myvideo.srt`. Donc il n'y a plus qu'à faire tourner `subsync-gui` par dessus et le tour est joué.
+
+1. Lancer le film / épisode dans VLC
+2. Ouvrir le plugin VLsub et télécharger le sous-titre qui vous plaît
+3. Ouvrir `subsync-gui` et sélectionnez votre vidéo (pas besoin de sélectionner le sous-titre puisque formatté ainsi par VLsub il sera automatiquement détecté).
+4. À la fin de la synchro le script propose de lancer VLC avec la vidéo et sous-titres synchro
+5. You're good to go ! ;)
 
 ## Problèmes possibles
 
