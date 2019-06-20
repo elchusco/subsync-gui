@@ -1,0 +1,68 @@
+#!/bin/bash
+
+export WIDTH=200
+export HEIGHT=100
+
+# Check if zenity is installed
+
+if ! zenity --version >/dev/null 2>&1; then
+	echo "ERROR: zenity is not installed." >&2
+    exit 1
+fi
+
+if ! subsync --version >/dev/null 2>&1; then
+	echo "ERROR: subsync is not installed. Or may not be in your PATH environment variable." >&2
+    exit 1
+fi
+
+if vlc --version >/dev/null 2>&1; then
+    VLC_INSTALLED=true
+fi
+
+zenity --info --title="${0##*/}" --width=$WIDTH --height=$HEIGHT --text="Choisir une vidéo"
+
+export VIDEO_FILE=$(zenity --file-selection --title="${0##*/} - Choisir une vidéo")
+# Try to guess the subtitle name from the video name
+export SUBTITLE=$(sed -re 's/(.*\.).*$/\1srt/' <<< $VIDEO_FILE)
+
+if [[ -f $SUBTITLE ]]; then
+    # If the guess was good then autosync subs
+    subsync $VIDEO_FILE -i $SUBTITLE -o ${SUBTITLE}.new
+    mv $SUBTITLE ${SUBTITLE}.ori
+    mv ${SUBTITLE}.new $SUBTITLE
+else
+    # If the subtitle name guess was wrong then ask user to pick the good one
+    zenity --info --title="${0##*/}" --width=$WIDTH --height=$HEIGHT --text="Choisir un sous-titre"
+    SUBTITLE=$(zenity --file-selection --title="${0##*/} - Choisir un sous-titre")
+    subsync $VIDEO_FILE -i "$SUBTITLE" -o $(sed -re 's/(.*\.).*$/\1srt/' <<< $VIDEO_FILE)
+fi
+
+zenity --question --title="${0##*/} - Lancer la vidéo dans VLC" --width=$WIDTH --height=$HEIGHT --text="Les sous-titres sont synchronisés avec la vidéo.\n\nVoulez vous lancer la vidéo dans VLC"
+LAUNCH_VLC=$?
+
+if [[ $LAUNCH_VLC == "0" ]]; then
+    if [[ "$VLC_INSTALLED" == "true" ]]; then
+        vlc $VIDEO_FILE &
+    else
+        zenity --question -title="${0##*/} - Lancer la vidéo dans VLC" --width=$WIDTH --height=$HEIGHT \
+               --text="ERROR: vlc n'est pas installé.\n\nVoulez vous ouvrir le répertoire les contenant ?"
+        OPEN_DIR=$?
+        echo "ERROR: vlc is not installed." >&2
+        if [[ $OPEN_DIR == 0 ]]; then
+            WORKING_DIR=$(sed -re 's/(.*\/).*$/\1/' <<< $VIDEO_FILE)
+            xdg-open $WORKING_DIR
+        else
+            exit 0
+        fi
+    fi
+else
+    zenity --question -title="${0##*/} - Ouvrir le répertoire" --width=$WIDTH --height=$HEIGHT \
+            --text="Voulez vous ouvrir le répertoire les contenant ?"
+    OPEN_DIR=$?
+    if [[ $OPEN_DIR == 0 ]]; then
+        WORKING_DIR=$(sed -re 's/(.*\/).*$/\1/' <<< $VIDEO_FILE)
+        xdg-open $WORKING_DIR
+    else
+        exit 0
+    fi
+fi
